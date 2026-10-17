@@ -1,0 +1,9 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    { "label": "Install everything", "type": "shell", "command": "npm install", "problemMatcher": [] },
+    { "label": "Start Sahyog (server + client)", "type": "shell", "command": "npm run dev", "isBackground": true, "problemMatcher": [] },
+    { "label": "Seed demo data", "type": "shell", "command": "npm run seed", "problemMatcher": [] },
+    { "label": "Run all tests", "type": "shell", "command": "npm test", "problemMatcher": [] }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "editor.formatOnSave": true,
+  "editor.tabSize": 2,
+  "files.eol": "\n",
+  "files.exclude": { "**/node_modules": true },
+  "search.exclude": { "**/node_modules": true, "**/dist": true },
+  "tailwindCSS.includeLanguages": { "javascript": "javascript", "javascriptreact": "javascriptreact" },
+  "css.lint.unknownAtRules": "ignore",
+  "emmet.includeLanguages": { "javascriptreact": "html" }
+}

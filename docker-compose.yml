@@ -1,0 +1,11 @@
+# Optional: local MongoDB for development ->  docker compose up -d
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - sahyog-mongo:/data/db
+volumes:
+  sahyog-mongo:

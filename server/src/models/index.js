@@ -1,0 +1,15 @@
+module.exports = {
+  User: require('./User'),
+  Category: require('./Category'),
+  Resource: require('./Resource'),
+  ResourceRequest: require('./ResourceRequest'),
+  Review: require('./Review'),
+  Notification: require('./Notification'),
+  Conversation: require('./Conversation'),
+  Message: require('./Message'),
+  EmergencyRequest: require('./EmergencyRequest'),
+  RewardTransaction: require('./RewardTransaction'),
+  Report: require('./Report'),
+  OrgVerification: require('./OrgVerification'),
+  AuditLog: require('./AuditLog'),
+};
