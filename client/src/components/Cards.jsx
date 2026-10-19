@@ -29,22 +29,52 @@ export function ResourceCard({ resource: r }) {
   );
 }
 
+
 export function EmergencyCard({ e }) {
+  // Prevent malformed or undefined items from crashing the page.
+  if (!e || typeof e !== 'object') {
+    return null;
+  }
+
   const u = URGENCY[e.urgency];
+
   return (
-    <Link to={`/emergencies/${e._id}`} className="card flex flex-col gap-3 border-l-4 p-4 transition hover:-translate-y-0.5" style={{ borderLeftColor: u?.color }}>
+    <Link
+      to={e._id ? `/emergencies/${e._id}` : '/emergencies'}
+      className="card flex flex-col gap-3 border-l-4 p-4 transition hover:-translate-y-0.5"
+      style={{ borderLeftColor: u?.color }}
+    >
       <div className="flex flex-wrap items-center gap-2">
-        <Badge cls={u?.cls}>{u?.label} urgency</Badge>
+        <Badge cls={u?.cls}>{u?.label || 'Unknown'} urgency</Badge>
+
         <StatusBadge status={e.status} map={EMERGENCY_STATUS} />
-        <Badge>{CATEGORY_NAMES[e.category] || e.category}</Badge>
-        {isVerifiedOrg(e.creator) && <VerifiedBadge />}
+
+        <Badge>{CATEGORY_NAMES[e.category] || e.category || 'Other'}</Badge>
+
+        {e.creator && isVerifiedOrg(e.creator) && <VerifiedBadge />}
       </div>
-      <h3 className="line-clamp-2 font-sans text-base font-semibold text-stone-900">{e.title}</h3>
-      <p className="line-clamp-2 text-sm text-stone-600">{e.description}</p>
+
+      <h3 className="line-clamp-2 font-sans text-base font-semibold text-stone-900">
+        {e.title || 'Emergency request'}
+      </h3>
+
+      <p className="line-clamp-2 text-sm text-stone-600">
+        {e.description || 'No description provided.'}
+      </p>
+
       <div className="mt-auto flex flex-wrap items-center justify-between gap-2 text-xs text-stone-500">
-        <span className="flex items-center gap-1"><Icon name="pin" className="h-3.5 w-3.5" />{e.areaLabel || 'Nearby'}{e.distanceKm !== undefined && ` · ${fmtKm(e.distanceKm)}`}</span>
-        <span>{e.responseCount} offer{e.responseCount === 1 ? '' : 's'} · {timeAgo(e.createdAt)}</span>
+        <span className="flex items-center gap-1">
+          <Icon name="pin" className="h-3.5 w-3.5" />
+          {e.areaLabel || 'Nearby'}
+          {e.distanceKm !== undefined && ` · ${fmtKm(e.distanceKm)}`}
+        </span>
+
+        <span>
+          {e.responseCount ?? 0} offer
+          {e.responseCount === 1 ? '' : 's'} · {e.createdAt ? timeAgo(e.createdAt) : 'Recently'}
+        </span>
       </div>
     </Link>
   );
 }
+
