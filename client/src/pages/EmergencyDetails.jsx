@@ -37,7 +37,9 @@ export default function EmergencyDetails() {
     <div className="container-page max-w-5xl py-8">
       <Async state={state}>
         {({ emergency: e }) => {
-          const isCreator = user && String(e.creator?._id) === String(user._id);
+          const isCreator = 
+            Boolean(user && e && e.creator) &&
+            String(e.creator._id ?? e.creator) === String(user._id);
           const isAdmin = user?.role === 'ADMIN';
           const u = URGENCY[e.urgency];
           const place = coordsOf(e.location);
