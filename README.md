@@ -1,209 +1,284 @@
 # Sahyog — Hyperlocal Community Resource-Sharing Platform
 
-Sahyog connects individuals, hospitals, schools, NGOs and neighbourhoods so they can **lend, borrow, donate and share** what they already own, and ask the community for help in urgent situations.
-It is a full-stack **MERN** application: React + Vite + Tailwind on the front, Express + MongoDB (Mongoose) + Socket.IO on the back.
+Sahyog connects individuals, hospitals, schools, NGOs, and neighbourhoods so they can **lend, borrow, donate, and share** resources—and ask the community for help in urgent situations.
 
-> Sahyog is a community coordination platform, **not** an emergency-response service. In immediate danger, call 112 (India) or your local emergency number.
+It is a full-stack **MERN** application built with React, Vite, and Tailwind CSS on the frontend; Express, MongoDB, and Mongoose on the backend; and Socket.IO for real-time features.
 
----
+> **Safety notice:** Sahyog is a community coordination platform, not an emergency-response service. In immediate danger in India, call **112** or your local emergency number.
+
+## Live demo
+
+- **Frontend:** <https://sahyog-flax.vercel.app/>
+- **Backend health check:** <https://sahyog-backend-vfb2.onrender.com/api/v1/health>
+
+The health-check endpoint reports whether the deployed API is responding. The Render free tier may sleep after inactivity, so its first response can take some time.
 
 ## Contents
 
-1. [Quick start (VS Code)](#quick-start-vs-code)
-2. [Features](#features)
-3. [Project structure](#project-structure)
+1. [Features](#features)
+2. [Project structure](#project-structure)
+3. [Quick start](#quick-start)
 4. [Configuration](#configuration)
-5. [Demo accounts & seed data](#demo-accounts--seed-data)
+5. [Demo accounts and seed data](#demo-accounts-and-seed-data)
 6. [Running tests](#running-tests)
 7. [Architecture notes](#architecture-notes)
-8. [Deployment (Vercel + Render + Atlas)](#deployment-vercel--render--atlas)
+8. [Deployment](#deployment-vercel-render-and-mongodb-atlas)
 9. [Troubleshooting](#troubleshooting)
 10. [More documentation](#more-documentation)
-
----
-
-## Quick start (VS Code)
-
-**Prerequisites:** Node.js 18.17+ (20 or 22 recommended) and either Docker *or* a MongoDB Atlas free cluster *or* nothing at all (see option C).
-
-1. **Open the folder** — `File → Open Folder…` and choose `sahyog/`. Accept the "install recommended extensions" prompt.
-2. **Install everything** (installs root, `server/` and `client/` packages):
-   ```bash
-   npm install
-   ```
-3. **Choose a database** — the project ships with a working `.env` for local development (`MONGODB_URI=mongodb://127.0.0.1:27017/sahyog`).
-   - **A. Local MongoDB with Docker:** `docker compose up -d`
-   - **B. MongoDB Atlas:** put your `mongodb+srv://…` string in `.env` as `MONGODB_URI`.
-   - **C. Zero setup:** skip the database, run `npm run dev:memory` (step 4). It starts a throw-away in-memory MongoDB pre-loaded with demo data. The first run downloads a MongoDB binary (~100 MB, then cached).
-4. **Start the app**
-   ```bash
-   npm run seed        # options A/B only: load demo data once
-   npm run dev         # API on :5000 + web app on :5173
-   # or, with option C:
-   npm run dev:memory
-   ```
-5. Open <http://localhost:5173> and sign in with a [demo account](#demo-accounts--seed-data).
-
-VS Code shortcuts: `Terminal → Run Task…` has **Start Sahyog**, **Seed demo data**, **Run all tests**; `Run and Debug` has **Debug API server**.
-
----
 
 ## Features
 
 | Area | What is implemented |
 |---|---|
-| **Accounts** | Register/login/logout, bcrypt-hashed passwords, JWT in an `httpOnly` cookie (plus Bearer support), profile + password change, "sign out of all devices", optional email verification & password reset (links are logged to the console when SMTP is not configured), account suspension checks |
-| **Roles** | Individual, Organization (admin-verified), Administrator — enforced by server middleware and mirrored in protected React routes |
-| **Listings** | Create / edit / delete with up to 5 images (JPEG/PNG/WebP, 5 MB each), category + subcategory, condition, BORROW / DONATE / SHARE, quantity, availability dates, privacy-preserving approximate location |
-| **Discovery** | Text search, category / type / condition filters, radius, sort by newest or nearest, pagination, **list ⇄ map** views (Leaflet + OpenStreetMap), browser geolocation only on request, manual location picker, `2dsphere` geospatial index |
-| **Requests** | Quantity, message, intended use, pickup/delivery, return date. Server-enforced state machine: `PENDING → APPROVED → IN_PROGRESS → COMPLETED` (+ `REJECTED`, `CANCELLED`), overdue flag for borrows, atomic inventory reservation |
-| **Chat & notifications** | One-to-one chat per request (REST for history, Socket.IO for live delivery), unread counts, typing indicator, reconnection handling, in-app notifications for every key event, scheduled return reminders |
-| **Emergency assistance** | Requests with urgency & category, map + filters, donor/volunteer responses, accept/decline, status workflow (`OPEN → UNDER_REVIEW → MATCHED → FULFILLED → CLOSED`), admin moderation, prominent "not an emergency service" notice |
-| **Trust & rewards** | Reviews only after completed exchanges (one per participant), abuse reporting, configurable trust formula, reward-point ledger (earn / reverse, no duplicates, daily cap, non-monetary), appeals against moderation decisions |
-| **Dashboards** | Member dashboard, organization dashboard (verification, inventory, stats), admin overview with live counts, analytics charts and audit log |
-| **Impact** | Public community-impact page: completed donations/borrows/shares, items reused, contributors, emergencies resolved, weekly/monthly/yearly charts, a **clearly labelled, configurable CO₂e estimate** |
-| **Admin** | Users (search, suspend/reactivate), organization verification queue, report & appeal decisions, listing moderation, emergency oversight, category management, audit trail |
-| **Security** | Helmet, restrictive CORS, rate limiting, Zod validation on every route, NoSQL-injection sanitising, CSRF header requirement for cookie auth, upload type/size limits, room-level Socket.IO authorisation, no stack traces in production, env validation on boot, graceful shutdown |
+| **Accounts** | Register, login, logout, bcrypt-hashed passwords, JWT in an `httpOnly` cookie (plus Bearer support), profile and password changes, sign out of all devices, optional email verification and password reset, account suspension checks |
+| **Roles** | Individual, organization (admin-verified), and administrator roles enforced by server middleware and protected React routes |
+| **Listings** | Create, edit, and delete listings; up to five images (JPEG/PNG/WebP, 5 MB each); category and subcategory; condition; BORROW / DONATE / SHARE; quantity; availability dates; approximate location for privacy |
+| **Discovery** | Text search, category/type/condition filters, radius search, sort by newest or nearest, pagination, list and map views (Leaflet + OpenStreetMap), browser geolocation only on request, manual location picker, `2dsphere` geospatial index |
+| **Requests** | Quantity, message, intended use, pickup/delivery, return date, server-enforced state machine (`PENDING → APPROVED → IN_PROGRESS → COMPLETED`, plus `REJECTED` and `CANCELLED`), overdue flags for borrows, atomic inventory reservation |
+| **Chat and notifications** | One-to-one chat per request, REST message history, Socket.IO live delivery, unread counts, typing indicator, reconnection handling, in-app notifications, scheduled return reminders |
+| **Emergency assistance** | Requests with urgency and category, map and filters, donor/volunteer responses, accept/decline, status workflow (`OPEN`, `UNDER_REVIEW`, `MATCHED`, `FULFILLED`, `CLOSED`), admin moderation, safety notice |
+| **Trust and rewards** | Reviews after completed exchanges, abuse reporting, configurable trust formula, reward-point ledger with duplicate prevention and daily cap, reward reversals, appeals against moderation decisions |
+| **Dashboards** | Member and organization dashboards, organization verification and inventory, admin overview with counts, analytics charts, audit log |
+| **Community impact** | Public impact dashboard with completed donations, combined borrow/share exchanges, reused items, contributors, fulfilled emergencies, time-range charts, category breakdown, and a clearly labelled configurable CO₂e estimate |
+| **Admin** | User search and suspension/reactivation, organization verification queue, report and appeal decisions, listing moderation, emergency oversight, category management, audit trail |
+| **Security** | Helmet, CORS restrictions, rate limiting, Zod validation, NoSQL-injection sanitisation, CSRF header requirement for cookie-authenticated state-changing requests, upload type/size limits, Socket.IO room authorisation, production error handling, environment validation, graceful shutdown |
 
-All 26 required pages exist (see `client/src/App.jsx` for the route table).
-
----
+See `client/src/App.jsx` for the frontend route table.
 
 ## Project structure
 
-```
+```text
 sahyog/
-├─ package.json            root scripts (dev, seed, test, build, dev:memory)
-├─ .env / .env.example     server configuration (loaded from the project root)
-├─ docker-compose.yml      optional local MongoDB
-├─ .vscode/                recommended extensions, tasks, debugger config
-├─ docs/                   API.md, DEMO_WALKTHROUGH.md
-├─ server/
-│  ├─ src/
-│  │  ├─ config/           env validation, db, scoring & impact formulas, categories
-│  │  ├─ models/           User, Resource, ResourceRequest, Review, Notification, Conversation,
-│  │  │                    Message, EmergencyRequest, RewardTransaction, Report, OrgVerification,
-│  │  │                    AuditLog, Category
-│  │  ├─ controllers/      thin HTTP handlers
-│  │  ├─ services/         business logic (requests, inventory, rewards, trust, impact, …)
-│  │  ├─ middleware/       auth, roles, validation, uploads, rate limits, errors, audit
-│  │  ├─ routes/           /api/v1 route table
-│  │  ├─ sockets/          Socket.IO auth + rooms
-│  │  ├─ validators/       Zod schemas
-│  │  ├─ utils/            state machine, geo, pagination, seed, logger, …
-│  │  ├─ app.js            Express app (importable by tests)
-│  │  ├─ server.js         HTTP + Socket.IO + jobs + graceful shutdown
-│  │  └─ devMemory.js      zero-setup dev mode (in-memory MongoDB)
-│  └─ tests/               Jest + Supertest + socket.io-client
-└─ client/
-   ├─ src/
-   │  ├─ pages/            all screens (+ pages/admin/)
-   │  ├─ components/       ui kit, cards, map, charts, dialogs
-   │  ├─ layouts/          MainLayout, AdminLayout
-   │  ├─ context/          Auth, Socket (notifications & chat), Location
-   │  ├─ hooks/ services/ utils/ routes/
-   │  └─ App.jsx, main.jsx
-   └─ vercel.json          SPA rewrite for Vercel
+├── package.json               # Root scripts for development, tests, and build
+├── .env.example               # Example server configuration; copy to .env locally
+├── docker-compose.yml         # Optional local MongoDB
+├── .vscode/                   # Recommended extensions, tasks, debugger config
+├── docs/
+│   ├── API.md                 # API endpoint reference
+│   └── DEMO_WALKTHROUGH.md    # Demo script and manual QA checklist
+├── server/
+│   ├── src/
+│   │   ├── config/            # Environment, database, scoring, impact formulas
+│   │   ├── models/            # Mongoose models
+│   │   ├── controllers/       # HTTP handlers
+│   │   ├── services/          # Application business logic
+│   │   ├── middleware/        # Authentication, validation, uploads, errors, audit
+│   │   ├── routes/            # /api/v1 route table
+│   │   ├── sockets/           # Socket.IO authentication and rooms
+│   │   ├── validators/        # Zod schemas
+│   │   ├── utils/             # State machine, geo, pagination, seed, logger
+│   │   ├── scripts/           # Controlled admin creation script
+│   │   ├── app.js             # Express app, importable by tests
+│   │   ├── server.js          # HTTP server, Socket.IO, jobs, graceful shutdown
+│   │   └── devMemory.js       # Zero-setup development mode
+│   └── tests/                 # Jest, Supertest, socket.io-client
+└── client/
+    ├── src/
+    │   ├── pages/             # Screens, including admin pages
+    │   ├── components/        # UI kit, cards, maps, charts, dialogs
+    │   ├── layouts/           # Main and admin layouts
+    │   ├── context/           # Auth, Socket.IO, and location state
+    │   ├── hooks/ services/ utils/ routes/
+    │   └── App.jsx, main.jsx
+    ├── .env.example           # Example Vite configuration
+    └── vercel.json            # SPA rewrite for React Router
 ```
 
----
+## Quick start
+
+### Prerequisites
+
+- Node.js **18.17 or newer** (Node.js 20 or 22 recommended).
+- One database option: local MongoDB via Docker, a MongoDB Atlas cluster, or the in-memory development option.
+- Git and a terminal. VS Code is optional.
+
+### 1. Clone and install
+
+```bash
+git clone <your-repository-url>
+cd sahyog
+npm install
+```
+
+The root `postinstall` script installs dependencies in `server/` and `client/` as well.
+
+### 2. Configure environment variables
+
+Create your local environment file from the example:
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` and set `MONGODB_URI` and a random `JWT_SECRET` of at least 32 characters. The actual `.env` file is local configuration and must **never** be committed to Git.
+
+Choose one of the following database options:
+
+- **A. Local MongoDB with Docker:** `docker compose up -d`
+- **B. MongoDB Atlas:** set your Atlas connection string as `MONGODB_URI` in `.env`.
+- **C. In-memory development database:** skip the external database setup and use `npm run dev:memory` below. The first run downloads a MongoDB binary (about 100 MB), which is cached for later runs.
+
+### 3. Start the app
+
+For local MongoDB or Atlas, you can load sample data into your **local/development database only**, then start the app:
+
+```bash
+npm run seed
+npm run dev
+```
+
+The API runs on port `5000` by default and Vite runs on port `5173`.
+
+For the in-memory option, run:
+
+```bash
+npm run dev:memory
+```
+
+Open <http://localhost:5173> in your browser. For sample login details, see [Demo accounts and seed data](#demo-accounts-and-seed-data).
+
+> **Never run `npm run seed` or `npm run seed:reset` against your production database.** The reset command can delete existing data, and seed data includes shared demo credentials.
 
 ## Configuration
 
-Server variables live in **`.env` at the project root** (a `server/.env` also works and takes precedence). Only variables the code actually reads are listed:
+Server variables are loaded from `server/.env` first, then the project-root `.env` as a fallback. Actual environment variables provided by a hosting platform take precedence. Use `.env.example` and `server/.env.example` as references; they contain examples, not production credentials.
 
 | Variable | Required | Notes |
 |---|---|---|
-| `NODE_ENV` | no | `development` (default) / `production` / `test` |
-| `PORT` | no | default `5000` |
-| `MONGODB_URI` | **yes** | local URI or Atlas `mongodb+srv://…` |
-| `JWT_SECRET` | **yes** | ≥ 32 characters. Production refuses placeholder values. Generate with `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"` |
-| `JWT_EXPIRES_IN` | no | default `7d` |
-| `CLIENT_URL` | no | allowed browser origin(s) for CORS + Socket.IO, comma-separated. default `http://localhost:5173` |
-| `SERVER_URL` | no | public API origin (used in generated links). default `http://localhost:PORT` |
-| `COOKIE_SAMESITE` | no | `lax` (dev default) / `none` (production default, requires HTTPS) / `strict` |
-| `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | no | when all three are set images go to Cloudinary; otherwise they are saved to `server/uploads/` (fine for development, not for hosts with ephemeral disks) |
-| `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USER`, `EMAIL_PASSWORD`, `EMAIL_FROM` | no | SMTP for verification / reset emails. Without them the links are printed in the server console |
-| `LOG_LEVEL` | no | `info` default |
+| `NODE_ENV` | No | `development` by default; use `production` for deployment and `test` for tests |
+| `PORT` | No | Defaults to `5000` |
+| `MONGODB_URI` | **Yes** | Local MongoDB URI or MongoDB Atlas connection string |
+| `JWT_SECRET` | **Yes** | At least 32 characters. Production rejects placeholder values. Generate a secret with `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"` |
+| `JWT_EXPIRES_IN` | No | Defaults to `7d` |
+| `CLIENT_URL` | No | Allowed browser origin(s) for CORS and Socket.IO; comma-separated. Defaults to `http://localhost:5173` |
+| `SERVER_URL` | No | Public API origin used in generated links; defaults to `http://localhost:PORT` |
+| `COOKIE_SAMESITE` | No | `lax` in development and `none` in production by default; `none` requires HTTPS and secure cookies |
+| `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | No | Configure all three for Cloudinary uploads. Without them, uploads are stored under `server/uploads/`, which is not persistent on ephemeral hosting disks |
+| `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USER`, `EMAIL_PASSWORD`, `EMAIL_FROM` | No | SMTP for verification and reset emails. In development, links are logged when email isn't configured |
+| `LOG_LEVEL` | No | Defaults to `info` |
 
-Client variables (`client/.env`, see `client/.env.example`): `VITE_API_URL` and `VITE_SOCKET_URL`. Leave both **empty in development** — Vite proxies `/api`, `/uploads` and `/socket.io` to `localhost:5000`, so cookies stay same-origin.
+Client-side variables belong in `client/.env` (see `client/.env.example`):
 
-**Tunable business rules** (no other code needs to change): `server/src/config/scoring.js` holds reward points, the daily reward cap, the trust-score formula weights and the CO₂e-per-item factors. The CO₂e figures are **illustrative placeholders, not audited data**; the UI labels them as estimates.
+- `VITE_API_URL` — the API **origin**, e.g. `https://sahyog-backend-vfb2.onrender.com`. Do not append `/api/v1`; the frontend API client adds that prefix.
+- `VITE_SOCKET_URL` — the API origin for Socket.IO. It may be left blank in development when the Vite proxy is used.
 
----
+For local development, leave the client variables blank so Vite can proxy `/api`, `/uploads`, and `/socket.io` to the local server. In production, set the variables in Vercel's project settings and redeploy after changing them.
 
-## Demo accounts & seed data
+**Tunable business rules:** `server/src/config/scoring.js` holds reward points, daily reward cap, trust-score weights, and CO₂e-per-item factors. CO₂e figures are illustrative estimates—not audited measurements.
 
-`npm run seed` (or `npm run dev:memory`) creates sample users, listings around Greater Noida / Delhi-NCR, requests in different states, reviews, an emergency request and a pending organization application. `npm run seed:reset` wipes and rebuilds.
+## Demo accounts and seed data
+
+`npm run seed` loads sample users, listings around Greater Noida / Delhi-NCR, requests in different states, reviews, an emergency request, and a pending organization application into the configured database. `npm run seed:reset` resets and rebuilds the sample dataset.
 
 | Email | Role | Password |
 |---|---|---|
 | `admin@sahyog.local` | Administrator | `Sahyog@123` |
 | `asha@sahyog.local`, `ravi@sahyog.local`, `meera@sahyog.local`, `karan@sahyog.local` | Individual | `Sahyog@123` |
 | `ngo@sahyog.local` | Verified organization | `Sahyog@123` |
-| `clinic@sahyog.local` | Organization, verification **pending** (approve it as admin) | `Sahyog@123` |
+| `clinic@sahyog.local` | Organization awaiting verification | `Sahyog@123` |
 
-These are demo credentials for local use only. Never seed a production database with them.
+These credentials are for **local demo data only**. Do not create or use these accounts on a live production database. Do not run seed/reset scripts in production.
 
----
+### Creating a production administrator
+
+The project includes a guarded script at `server/src/scripts/createAdmin.js` for controlled production administrator creation. It requires `NODE_ENV=production`, a secure `ADMIN_PASSWORD` environment variable (12–128 characters, without spaces), and an explicit confirmation phrase. Run it only from a trusted environment connected to the intended production database. Never put the production password in source control or print it in logs.
 
 ## Running tests
 
+Run the test suites from the project root:
+
 ```bash
-npm test                # server (Jest) + client (Vitest)
+npm test
 npm run test:server
 npm run test:client
 ```
 
-* **Server** — unit tests (state machine, trust formula, impact maths, geo, validators) and integration tests that run the real Express app against an in-memory MongoDB (`mongodb-memory-server`; the binary is downloaded on first use). The workflow suite covers: register/login, create listing, nearby discovery, borrow request, owner approve/reject, messaging between participants only, completing an exchange, review, rewards earned **exactly once**, inventory consistency under concurrent requests, emergency request + response, organization verification by an admin, and authorisation failures. `socket.test.js` checks Socket.IO room access control.
-* **Client** — Vitest + Testing Library: formatting helpers and the registration form's validation messages.
-* **Manual responsive / empty / error-state checks** — see the checklist in `docs/DEMO_WALKTHROUGH.md`.
+- **Server:** Jest unit tests for the state machine, trust formula, impact maths, geo utilities, and validators; integration tests use an in-memory MongoDB (`mongodb-memory-server`, which downloads a binary on first use). Workflow tests cover registration/login, listings, discovery, borrow requests, approval/rejection, messaging authorisation, completed exchanges, reviews, rewards, inventory consistency, emergency requests/responses, organization verification, and access-control failures. `socket.test.js` checks Socket.IO room access.
+- **Client:** Vitest and Testing Library tests, including formatting helpers and registration validation.
+- **Manual QA:** see `docs/DEMO_WALKTHROUGH.md` for responsive, empty-state, and error-state checks.
 
----
+Run `npm run build` from the root to build the frontend.
 
 ## Architecture notes
 
-* **Response envelope:** `{ success: true, data, meta? }` or `{ success: false, message, errors? }`.
-* **Auth:** the JWT is set in an `httpOnly` cookie. For cross-site hosting (Vercel ↔ Render) where third-party cookies may be blocked, Socket.IO authenticates with a short-lived token from `GET /auth/socket-token`. Each token carries a `tokenVersion`, so changing the password or "sign out everywhere" revokes all sessions.
-* **CSRF:** state-changing API calls must carry `X-Requested-With`, which a cross-site form cannot send; CORS only allows `CLIENT_URL` origins.
-* **Inventory consistency:** quantity reservation uses single-document conditional updates (`findOneAndUpdate` with `availableQuantity >= n`), which are atomic on every MongoDB deployment — including standalone local servers where multi-document transactions are unavailable.
-* **Reward integrity:** every ledger entry carries a unique dedupe key (user + exchange + reward type), so a completion can never pay out twice even if the endpoint is retried; a daily cap limits farming; confirmed violations can reverse points.
-* **Privacy:** public listing coordinates are rounded to roughly 1 km. The exact pickup detail is stored separately and revealed only to the owner and an approved requester.
-* **Geo search:** GeoJSON `Point` + `2dsphere` index; proximity queries use `$geoNear` and return the distance per result.
+- **Response envelope:** successful API responses use `{ success: true, data, meta? }`; errors use `{ success: false, message, errors? }`.
+- **Authentication:** JWT authentication uses an `httpOnly` cookie, with Bearer support. Cross-site deployments (Vercel and Render on separate domains) require correct HTTPS, CORS, and cookie settings. Socket.IO can use a short-lived token from `GET /api/v1/auth/socket-token`. Tokens carry a `tokenVersion`, so password changes and sign-out-everywhere can revoke sessions.
+- **CSRF protection:** state-changing API calls require the `X-Requested-With` header, and CORS allows only configured client origins.
+- **Inventory consistency:** quantity reservations use conditional updates (including `availableQuantity >= requestedQuantity`) so concurrent requests cannot reserve more stock than is available.
+- **Reward integrity:** ledger entries use deduplication keys to prevent duplicate payouts; daily caps limit abuse, and qualifying violations can reverse points.
+- **Privacy:** public listing coordinates are approximate. Exact pickup details are restricted to the owner and an approved requester.
+- **Geospatial search:** GeoJSON `Point` data and a `2dsphere` index support proximity queries.
 
----
+## Deployment (Vercel, Render, and MongoDB Atlas)
 
-## Deployment (Vercel + Render + Atlas)
+### 1. MongoDB Atlas
 
-1. **MongoDB Atlas** — create a free cluster, a database user, and allow the Render outbound IPs (or `0.0.0.0/0` for a demo). Copy the connection string.
-2. **Render (API)** — New → *Web Service* from your GitHub repo.
-   * Root directory: `server` · Build: `npm install` · Start: `npm start`
-   * Environment: `NODE_ENV=production`, `MONGODB_URI`, `JWT_SECRET` (random, 32+ chars), `CLIENT_URL=https://<your-app>.vercel.app`, `SERVER_URL=https://<your-api>.onrender.com`, Cloudinary variables (Render's disk is ephemeral, so use Cloudinary for images). `COOKIE_SAMESITE` defaults to `none` in production, which is what a separate-domain frontend needs.
-   * Health check path: `/api/v1/health`
-   * Seed once from the Render shell if you want demo data: `npm run seed`.
-3. **Vercel (web)** — Import the repo, **Root Directory `client`**, framework *Vite*. Set `VITE_API_URL=https://<your-api>.onrender.com` and `VITE_SOCKET_URL` to the same value. `client/vercel.json` already rewrites all paths to `index.html` for React Router.
-4. Update `CLIENT_URL` on Render to the final Vercel URL (comma-separate if you also use a custom domain) and redeploy.
+1. Create a cluster and database user.
+2. Configure network access for your deployment. For a demo, broad access may be convenient, but restrict access where possible.
+3. Copy the connection string and set it as `MONGODB_URI` in Render. Keep the URI private.
 
-Render's free tier sleeps after inactivity, so the first request can take ~30–60 s.
+### 2. Render (API)
 
-For the strongest cookie behaviour put both apps under one parent domain (e.g. `app.example.com` and `api.example.com`) so cookies are first-party.
+Create a Web Service from your GitHub repository using:
 
----
+- **Root directory:** `server`
+- **Build command:** `npm install`
+- **Start command:** `npm start`
+- **Health-check path:** `/api/v1/health`
+
+Configure these environment variables in Render:
+
+- `NODE_ENV=production`
+- `MONGODB_URI`
+- `JWT_SECRET` (random, at least 32 characters)
+- `CLIENT_URL=https://sahyog-flax.vercel.app` (or your final frontend origin)
+- `SERVER_URL=https://sahyog-backend-vfb2.onrender.com` (or your deployed API origin)
+- Optional Cloudinary variables for persistent image storage
+- Optional SMTP variables for email delivery
+
+`COOKIE_SAMESITE` defaults to `none` in production, which is intended for HTTPS deployments where the frontend and API are on separate domains. Confirm cookie and CORS behaviour with your deployed domains.
+
+**Do not run `npm run seed` or `npm run seed:reset` in the Render shell against production.** If an initial administrator is required, use the guarded `server/src/scripts/createAdmin.js` process instead.
+
+### 3. Vercel (frontend)
+
+Import the repository into Vercel and configure:
+
+- **Root directory:** `client`
+- **Framework preset:** Vite
+- `VITE_API_URL=https://sahyog-backend-vfb2.onrender.com` (API origin only; do not add `/api/v1`)
+- `VITE_SOCKET_URL=https://sahyog-backend-vfb2.onrender.com`
+
+The `client/vercel.json` file contains the SPA rewrite for React Router. Set the values to your actual deployed API origin if it changes, then redeploy the frontend.
+
+### 4. Verify the deployment
+
+1. Open the frontend and test login/logout.
+2. Open the backend health-check URL.
+3. Test resource discovery, creating a request, emergency listing/details, and the Impact dashboard.
+4. Check browser DevTools → Network and Console if an API request or page fails.
+
+Render's free tier may sleep after inactivity, making the first request slower. For more reliable first-party cookie behaviour, consider putting both apps under a shared parent domain, such as `app.example.com` and `api.example.com`.
 
 ## Troubleshooting
 
-| Symptom | Fix |
+| Symptom | What to check |
 |---|---|
-| `Invalid environment configuration` on start | Read the listed problems; usually a missing `MONGODB_URI` or a `JWT_SECRET` shorter than 32 characters |
-| `ECONNREFUSED 127.0.0.1:27017` | MongoDB isn't running: `docker compose up -d`, use Atlas, or `npm run dev:memory` |
-| Login works but you're logged out on refresh in production | Cookie/CORS mismatch: `CLIENT_URL` must exactly equal the browser origin, the API must be HTTPS, `COOKIE_SAMESITE=none` |
-| Images don't show after redeploying | Without Cloudinary, uploads live on local disk; configure Cloudinary for hosted deployments |
-| Map tiles are blank | OpenStreetMap tiles need internet access; check an ad-blocker or firewall |
-| Port already in use | Change `PORT` in `.env` and `VITE_DEV_API` (e.g. `VITE_DEV_API=http://localhost:5001 npm run dev --prefix client`) |
-
----
+| `Invalid environment configuration` on startup | Confirm `MONGODB_URI` is set and `JWT_SECRET` is at least 32 characters. Use a non-placeholder secret in production. |
+| `ECONNREFUSED 127.0.0.1:27017` | Start local MongoDB with `docker compose up -d`, use Atlas, or run `npm run dev:memory`. |
+| Login works but the session disappears after refresh in production | Check the exact `CLIENT_URL`, HTTPS, CORS, `COOKIE_SAMESITE=none`, and browser cookie restrictions. |
+| API requests return `401 Unauthorized` | Sign in again and inspect the response to `/api/v1/auth/me`. Check cookie and CORS settings; do not expose session cookies or tokens when sharing logs. |
+| Images disappear after redeploying | Without Cloudinary, uploads are stored on local disk. Configure Cloudinary for hosted deployments with ephemeral filesystems. |
+| Map tiles are blank | Check internet access, browser extensions, and whether OpenStreetMap tile requests are blocked. |
+| Port already in use | Set a different `PORT` in the server environment and update the Vite proxy configuration if needed. |
+| Impact page crashes or shows missing values | Inspect the `/api/v1/impact?period=month` JSON and ensure the frontend uses the current API field names, including `environmentalEstimate`, `assumptions`, and `allTime`. |
+| Emergency exists in the API but not on the page | Inspect the emergency-list request's response, selected filters, and the browser Console. Confirm the frontend uses the deployed bundle after a new deployment. |
 
 ## More documentation
 
-* [`docs/API.md`](docs/API.md) — every endpoint, request fields, status codes
-* [`docs/DEMO_WALKTHROUGH.md`](docs/DEMO_WALKTHROUGH.md) — a 10-minute demo script, QA checklist and a presentation outline
+- [`docs/API.md`](docs/API.md) — API endpoints, request fields, and status codes.
+- [`docs/DEMO_WALKTHROUGH.md`](docs/DEMO_WALKTHROUGH.md) — a 10-minute demo script, QA checklist, and presentation outline.
+
+---
+
+Built as a community resource-sharing project. Contributions and issue reports are welcome.
